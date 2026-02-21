@@ -4,6 +4,8 @@ import { ArrowRight, ArrowUpRight, Clock, ImageIcon } from "lucide-react";
 import { Button } from "components/ui/Button";
 import Upload from "components/Upload";
 import { useNavigate } from "react-router";
+import { useState } from "react";
+import { createProject } from "lib/puter.action";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -14,9 +16,36 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Home() {
   const navigate = useNavigate();
+  const [projects, setProjects] = useState<DesignItem[]>([]);
+
   const handleUploadComplete = async (base64Data: string) => {
     const newId = Date.now().toString();
-    navigate(`/visualizer/${newId}`);
+    const name = `Residence ${newId}`;
+
+    const newItem = {
+      id: newId,
+      name,
+      sourceImage: base64Data,
+      renderedImage: undefined,
+      timestamp: Date.now(),
+    };
+
+    const saved = await createProject({ item: newItem, visibility: "private" });
+
+    if (!saved) {
+      console.error(`Failed to create a project, skipping navigation`);
+      return false;
+    }
+
+    setProjects((prev) => [newItem, ...prev]);
+
+    navigate(`/visualizer/${newId}`, {
+      state: {
+        initialImage: saved.sourceImage,
+        initialRender: saved.renderedImage || null,
+        name,
+      },
+    });
 
     return true;
   };
@@ -73,28 +102,37 @@ export default function Home() {
           </div>
 
           <div className="projects-grid">
-            <div className="project-card group">
-              <div className="preview">
-                <img
-                  src="https://roomify-mlhuk267-dfwu1i.puter.site/projects/1770803585402/rendered.png"
-                  alt="Project 1"
-                />
-                <div className="badge">
-                  <span>Living Room</span>
+            {projects.map(
+              ({ id, name, renderedImage, sourceImage, timestamp }) => (
+                <div className="project-card group" key={id}>
+                  <div className="preview">
+                    <img
+                      src={renderedImage || sourceImage}
+                      alt={name || "Project"}
+                    />
+                    <div className="badge">
+                      <span>{name || "Project"}</span>
+                    </div>
+                  </div>
+                  <div className="card-body">
+                    <h3>{name || "Project"}</h3>
+                    <div className="meta">
+                      <Clock size={12} />
+                      <span>{new Date(timestamp).toLocaleDateString()}</span>
+                      <span>by {name?.split(" ")[0] || "Project"}</span>
+                    </div>
+                    <div className="arrow">
+                      <ArrowUpRight size={18} className="icon" />
+                    </div>
+                  </div>
                 </div>
+              ),
+            )}
+            {projects.length === 0 && (
+              <div className="empty">
+                <p>No projects yet</p>
               </div>
-              <div className="card-body">
-                <h3>Living Room</h3>
-                <div className="meta">
-                  <Clock size={12} />
-                  {/* <span>{new Date().toLocaleDateString()}</span> */}
-                  <span>by Teo J.</span>
-                </div>
-                <div className="arrow">
-                  <ArrowUpRight size={18} className="icon" />
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </section>
