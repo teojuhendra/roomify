@@ -4,6 +4,10 @@ import { createProject, getProjectById } from "lib/puter.action";
 import { Box, Download, RefreshCcw, Share2, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ReactCompareSlider,
+  ReactCompareSliderImage,
+} from "react-compare-slider";
+import {
   useLocation,
   useNavigate,
   useOutletContext,
@@ -22,12 +26,30 @@ const visualizerId = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   const handleBack = () => navigate("/");
 
-  const runGeneration = async (item: DesignItem) => {
-    if (!id || item.sourceImage) return;
+  const handleExport = () => {
+    if (!currentImage) return;
+    const m = currentImage.startsWith("data:")
+      ? /data:image\/(\w+);/.exec(currentImage)
+      : null;
+    const ext = m ? m[1] : "png";
+    const filename = `roomify-render-${id ?? "export"}.${ext}`;
+    const a = document.createElement("a");
+    a.href = currentImage;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
+  const runGeneration = async (item: DesignItem) => {
+    if (!id || !item.sourceImage) return;
+
+    setGenerationError(null);
     try {
       setIsProcessing(true);
       const result = await Generate3DView({ sourceImage: item.sourceImage });
@@ -53,8 +75,13 @@ const visualizerId = () => {
           setProject(saved);
           setCurrentImage(saved.renderedImage || result.renderedImage);
         }
+      } else {
+        setGenerationError("Generate 3D tidak mengembalikan gambar.");
       }
     } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Generate 3D gagal. Coba lagi.";
+      setGenerationError(message);
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -130,7 +157,7 @@ const visualizerId = () => {
             <div className="panel-actions">
               <Button
                 size="sm"
-                onClick={() => {}}
+                onClick={handleExport}
                 className="export"
                 disabled={!currentImage}
               >
@@ -178,7 +205,58 @@ const visualizerId = () => {
                   </div>
                 </div>
               )}
+              {generationError && !isProcessing && (
+                <div className="render-overlay render-error">
+                  <div className="rendering-card">
+                    <span className="title">Gagal generate 3D</span>
+                    <span className="subtitle">{generationError}</span>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        <div className="panel compare">
+          <div className="panel-header">
+            <div className="panel-meta">
+              <p>Comparison</p>
+              <h3>Before and After</h3>
+            </div>
+            <div className="hint">Drag to Compare</div>
+          </div>
+
+          <div className="compare-stage">
+            {project?.sourceImage && currentImage ? (
+              <ReactCompareSlider
+                defaultValue={50}
+                style={{ height: "auto", width: "100%" }}
+                itemOne={
+                  <ReactCompareSliderImage
+                    src={project?.sourceImage}
+                    alt="Original"
+                    className="comapre-img"
+                  />
+                }
+                itemTwo={
+                  <ReactCompareSliderImage
+                    src={(currentImage ?? project?.renderedImage) ?? ""}
+                    alt="After Render"
+                    className="comapre-img"
+                  />
+                }
+              />
+            ) : (
+              <div className="compare-fallback">
+                {project?.sourceImage && (
+                  <img
+                    src={project.sourceImage}
+                    alt="Original"
+                    className="compare-img"
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
