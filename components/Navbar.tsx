@@ -30,12 +30,12 @@ const Navbar = () => {
         <div className="left">
           <div className="brand">
             <Box className="logo" />
-            <span className="name">Roomify</span>
+            <span className="name">Blending</span>
           </div>
 
           <ul className="links">
+            <a href="#">Display</a>
             <a href="#">Products</a>
-            <a href="#">Pricing</a>
             <a href="#">Comunity</a>
             <a href="#">Enterprise</a>
           </ul>
