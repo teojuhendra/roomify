@@ -30,7 +30,7 @@ const Navbar = () => {
         <div className="left">
           <div className="brand">
             <Box className="logo" />
-            <span className="name">Blending</span>
+            <span className="name">Blendify</span>
           </div>
 
           <ul className="links">

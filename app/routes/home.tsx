@@ -1,23 +1,40 @@
 import Navbar from "components/Navbar";
 import type { Route } from "./+types/home";
-import { ArrowRight, ArrowUpRight, Clock, ImageIcon } from "lucide-react";
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Clock,
+  ImageIcon,
+  Trash2,
+} from "lucide-react";
 import { Button } from "components/ui/Button";
 import Upload from "components/Upload";
 import { useNavigate } from "react-router";
 import { useEffect, useRef, useState } from "react";
-import { createProject, getProjects } from "lib/puter.action";
+import { createProject, deleteProject, getProjects } from "lib/puter.action";
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
+    { title: "Blendify" },
+    { name: "description", content: "AI design tool for beautiful spaces." },
   ];
 }
 
 export default function Home() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState<DesignItem[]>([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const isCreatingProjectRef = useRef(false);
+
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm("Hapus project ini?")) return;
+    setDeletingId(projectId);
+    const ok = await deleteProject({ id: projectId });
+    setDeletingId(null);
+    if (ok) setProjects((prev) => prev.filter((p) => p.id !== projectId));
+  };
 
   const handleUploadComplete = async (base64Data: string) => {
     try {
@@ -78,14 +95,8 @@ export default function Home() {
           <div className="dot">
             <div className="pulse"></div>
           </div>
-          <p>Introducing Roomify 2.0</p>
+          <p>Introducing Blendify</p>
         </div>
-
-        <h1>Build beautiful spaces at the speed of thought with Roomify</h1>
-        <p className="subtitle">
-          Roomify is an AI first design tool that helps you create beautiful
-          spaces at the speed of thought.
-        </p>
 
         <div className="actions">
           <a href="#upload" className="cta">
@@ -137,6 +148,17 @@ export default function Home() {
                     <div className="badge">
                       <span>{name || "Project"}</span>
                     </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="project-delete"
+                      disabled={deletingId === id}
+                      onClick={(e) => handleDeleteProject(e, id)}
+                      aria-label="Hapus project"
+                    >
+                      <Trash2 size={24} className="project-delete-icon" />
+                    </Button>
                   </div>
                   <div className="card-body">
                     <h3>{name || "Project"}</h3>

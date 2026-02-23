@@ -1,7 +1,11 @@
 import { Button } from "components/ui/Button";
 import { Generate3DView } from "lib/ai.action";
-import { createProject, getProjectById } from "lib/puter.action";
-import { Box, Download, RefreshCcw, Share2, X } from "lucide-react";
+import {
+  createProject,
+  deleteProject,
+  getProjectById,
+} from "lib/puter.action";
+import { Box, Download, RefreshCcw, Share2, Trash2, X } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ReactCompareSlider,
@@ -27,8 +31,17 @@ const visualizerId = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleBack = () => navigate("/");
+
+  const handleDeleteProject = async () => {
+    if (!id || !window.confirm("Hapus project ini? Tindakan tidak dapat dibatalkan.")) return;
+    setIsDeleting(true);
+    const ok = await deleteProject({ id });
+    setIsDeleting(false);
+    if (ok) navigate("/", { replace: true });
+  };
 
   const handleExport = () => {
     if (!currentImage) return;
@@ -36,7 +49,7 @@ const visualizerId = () => {
       ? /data:image\/(\w+);/.exec(currentImage)
       : null;
     const ext = m ? m[1] : "png";
-    const filename = `roomify-render-${id ?? "export"}.${ext}`;
+    const filename = `blendify-render-${id ?? "export"}.${ext}`;
     const a = document.createElement("a");
     a.href = currentImage;
     a.download = filename;
@@ -139,7 +152,7 @@ const visualizerId = () => {
       <nav className="topbar">
         <div className="brand">
           <Box className="logo" />
-          <span className="name">Blending</span>
+          <span className="name">Blendify</span>
         </div>
         <Button variant="ghost" size="sm" onClick={handleBack} className="exit">
           <X className="icon" /> Exit Editor{" "}
@@ -170,6 +183,16 @@ const visualizerId = () => {
                 disabled={!currentImage}
               >
                 <Share2 className="w-4 h-4 mr-2" /> Share
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleDeleteProject}
+                className="delete-project"
+                disabled={isDeleting}
+                aria-label="Hapus project"
+              >
+                <Trash2 className="delete-project-icon mr-2" size={20} /> Hapus
               </Button>
             </div>
 
@@ -235,14 +258,14 @@ const visualizerId = () => {
                   <ReactCompareSliderImage
                     src={project?.sourceImage}
                     alt="Original"
-                    className="comapre-img"
+                    className="compare-img"
                   />
                 }
                 itemTwo={
                   <ReactCompareSliderImage
                     src={(currentImage ?? project?.renderedImage) ?? ""}
                     alt="After Render"
-                    className="comapre-img"
+                    className="compare-img"
                   />
                 }
               />
