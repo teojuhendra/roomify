@@ -29,19 +29,34 @@ export const Generate3DView = async ({ sourceImage }: Generate3DViewParams) => {
     throw new Error("Invalid data URL");
   }
 
-  const response = await puter.ai.txt2img(ROOMIFY_RENDER_PROMPT, {
-    provider: "gemini",
-    model: "gemini-2.5-flash-image-preview",
-    input_image: base64Data,
-    input_image_mime_type: mimeType,
-    ratio: { w: 1024, h: 1024 },
-  });
+  let response: unknown;
+  try {
+    response = await puter.ai.txt2img(ROOMIFY_RENDER_PROMPT, {
+      provider: "gemini",
+      model: "gemini-2.5-flash-image-preview",
+      input_image: base64Data,
+      input_image_mime_type: mimeType,
+      ratio: { w: 1024, h: 1024 },
+    });
+  } catch (err: unknown) {
+    const msg =
+      err && typeof err === "object" && "message" in err
+        ? String((err as { message?: unknown }).message)
+        : err instanceof Error
+          ? err.message
+          : "Generate 3D gagal";
+    throw new Error(msg);
+  }
 
-  const rawImageUrl = (response as HTMLImageElement).src ?? null;
-  if (!rawImageUrl) return { renderedImage: null, renderedPath: undefined };
+  const img = response as HTMLImageElement & { valueOf?: () => string };
+  const rawImageUrl =
+    img?.src ?? (typeof img?.valueOf === "function" ? img.valueOf() : null);
+  if (!rawImageUrl || typeof rawImageUrl !== "string") {
+    throw new Error("API tidak mengembalikan gambar (response kosong)");
+  }
 
   const renderedImage = rawImageUrl.startsWith("data:")
     ? rawImageUrl
     : await fetchAsDataUrl(rawImageUrl);
-  return { renderedImage, renderedpath: undefined };
+  return { renderedImage, renderedPath: undefined };
 };
